@@ -1,0 +1,95 @@
+div#master {
+  width: 100%;
+  height: 450px;
+  /*background: aqua;*/
+  margin: auto;
+}
+div#zero {
+  width: 100%;
+  height: 50px;
+  /*background: blue;*/
+  margin-bottom: 15px;
+}
+
+div#one {
+  width: 50%;
+  height: 400px;
+  /*background: red;*/
+  float: left;
+  position: relative;;
+}
+div#two {
+  margin-left: 50%;
+  height: 400px;
+  /*background: black;*/
+}
+div#datepicker {
+  margin: 0;
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%)        
+}
+
+div#info {
+  /*background: yellow;*/
+  text-align: center;
+  /*font-weight: bold;
+  font-size: 1.5em;*/
+}
+
+.child {
+  height:40px;
+  margin:2px;
+  color: #000;
+  width: 90%;
+  align-items: center;
+}
+
+.child p {
+  margin:0px;
+  padding: 10px;
+}
+
+.grey{
+  background: #ddd;
+}
+
+.red{
+  background: #fcc;
+}
+
+.green{
+  background: #cfc;
+}
+
+.editable_field input{
+  width: 70%;
+}
+
+.footer{
+  color: #E6E6E6;
+  background-color: #424242;
+  opacity: 0.9;
+  padding: 20px;
+  text-align: center;
+}
+
+.navbar {
+  color: #E6E6E6;
+  background-color: #424242;
+  opacity: 0.9;
+  padding: 20px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 2.5em;
+}
+
+.home {
+  color: #E6E6E6;
+  background-color: #424242;
+  opacity: 0.9;
+  padding: 20px;
+  padding-top: 5px;
+}

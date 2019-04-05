@@ -1,0 +1,310 @@
+<html>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta charset="iso-8859-1">
+  <head>
+    <meta http-equiv="cache-control" content="max-age=0" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="expires" content="0" />
+    <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Dance With Death</title>
+    <meta name="description" content="Dance With Death">
+    <meta name="author" content="Dance With Death">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}"/>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/jquery-ui.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/jquery-ui.theme.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/jquery-ui.structure.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/custom.css') }}">
+    <style>
+
+      body { 
+        background: url("{{ url_for('static', filename='img/home.png') }}") no-repeat center center fixed; 
+        -webkit-background-size: cover; 
+        -moz-background-size: cover; 
+        -o-background-size: cover;
+        background-size: cover; 
+      }
+
+    </style>
+
+    <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/init_conf.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/params.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/status.js') }}"></script>
+
+    <script type="text/javascript">
+      jQuery( function() {
+
+        jQuery( "#datepicker" ).
+          datepicker({
+            onSelect: function(dateText) {
+              get_times_from_calendar(0);
+            }
+          }).val();
+      });
+
+      jQuery(document).ready( function() {
+        get_times_from_calendar(0)
+      });
+
+      var switchToInput = function () {
+          $label = jQuery(this).find("label")
+          var $input = jQuery("<input>", {
+              val: $label.text(),
+              type: "text"
+          });
+          $input.addClass("editable_field");
+          $input.attr("tabindex","-1");
+
+          // Stored previous value if cancel
+          $input.attr('previous_value', $label.text())
+
+          // Sava current value if enter
+          $input.attr('next_value', "###")
+
+          $input.on('keydown',function(evt) {
+            // Prevent TAB
+            if (evt.keyCode == 9) {
+              evt.preventDefault();
+            }
+            // If Enter check is valid else red background
+            else if (evt.keyCode == 13) {
+              if($input.val().length > 0 && !EMAIL_REGEX.test($input.val())){ 
+                // If mail is not valid
+                $input.addClass("red")
+              }
+              else{
+                $input.attr('next_value', $input.val())
+                $input.blur();
+              }
+            }
+            // ESC rollback
+            else if (evt.keyCode == 27) {
+               $input.blur();
+            }
+          });
+
+          $label.replaceWith($input);
+          $input.on("blur", switchToLabel);
+          $input.select();
+      };
+
+      var switchToLabel = function () {
+          // Previous value in field
+          _previous_text = jQuery(this).attr('previous_value')
+
+          // Next value if enter
+          _next_text = jQuery(this).attr('next_value')
+
+          // If Blur, get value from textfield
+          _val_text = jQuery(this).val()
+
+          // Default previous value
+          _text = _previous_text
+
+          if(_next_text !== "###"){
+            if(_next_text.length == 0 || EMAIL_REGEX.test(_next_text)){
+              _text = _next_text
+            }
+          }
+          else if(_val_text.length == 0 || EMAIL_REGEX.test(_val_text)){
+            _text = _val_text;
+          }
+          
+          var $label = jQuery("<label>", {
+              text: _text
+          });
+          $label.addClass("editable_field");
+          jQuery(this).replaceWith($label);
+          $label.on("click", switchToInput);
+          if(_text.length == 0 ){
+            $label.parent().parent().removeClass("grey")
+            $label.parent().parent().addClass("green")
+            if(_previous_text.length > 0){
+              // Delete
+              id = $label.parent().parent().attr("inner_id")
+              delete_appointment(id)
+            }
+          }
+          else{
+            $label.parent().parent().removeClass("green")
+            $label.parent().parent().addClass("grey")
+            
+            email = _text
+            
+            if(_previous_text.length > 0){
+              if(_previous_text !== _text){
+                // Update
+                 id = $label.parent().parent().attr("inner_id")
+                 update_appointment(id, email)
+              }
+            }
+            else{
+              // Create
+              time = $label.parent().parent().attr("id")
+              create_appointment(time, email)
+            }
+          }
+      }
+
+      function get_times_from_calendar(count){
+
+        var date = jQuery( "#datepicker" ).datepicker( "getDate" );
+        date = jQuery.datepicker.formatDate(DATE_FORMAT, date)
+
+        url = URL_API + "action=list&date=" + date
+
+
+        jQuery.getJSON( url, function( data ) {
+
+          if(data[STATUS] == LIST_OK_STATUS){
+            fill_times(data[TIMES])
+          }
+          else if(data[STATUS] == BROKEN_PIPE_ERROR_STATUS && count < MAX_COUNT){
+            get_times_from_calendar(count++)
+          }
+          else{
+            alert(data[MESSAGE])
+          }
+
+        });
+      }
+
+      function create_appointment(time, email){
+
+        var date = jQuery( "#datepicker" ).datepicker( "getDate" );
+        date = jQuery.datepicker.formatDate(DATE_FORMAT, date)
+
+        url = URL_API + "action=create&date="+date+"&time="+time+"&email="+email
+
+
+        jQuery.getJSON( url, function( data ) {
+
+          alert(data[MESSAGE])
+          if(data[STATUS] == CREATE_OK_STATUS){
+             fill_times(data[TIMES])
+          }
+          else{
+            get_times_from_calendar(0)
+          }
+
+        });
+      }
+
+      function update_appointment(id, email){
+
+        url = URL_API + "action=update&id="+id+"&email="+email
+
+        jQuery.getJSON( url, function( data ) {
+
+          alert(data[MESSAGE])
+          if(data[STATUS] == UPDATE_OK_STATUS){
+             fill_times(data[TIMES])
+          }
+          else{
+            get_times_from_calendar(0)
+          }
+
+        });
+      }
+
+      function delete_appointment(id){
+
+        url = URL_API + "action=delete&id="+id
+
+        jQuery.getJSON( url, function( data ) {
+
+          alert(data[MESSAGE])
+          if(data[STATUS] == DELETE_OK_STATUS){
+             fill_times(data[TIMES])
+          }
+          else{
+            get_times_from_calendar(0)
+          }
+
+        });
+      }
+
+      function fill_times(times){
+        jQuery("#two").empty();
+
+        var date = jQuery( "#datepicker" ).datepicker( "getDate" );
+        date = jQuery.datepicker.formatDate(SLOT_DATE_FORMAT, date)
+
+        jQuery.each( times, function( time_id ) {
+
+          time = times[time_id];
+
+          time_show = date + ' ' + (time_id<10?"0"+time_id:time_id) + ":00 - "
+
+
+          var time_div = document.createElement( "div" );
+          jQuery(time_div).attr("id",time_id)
+          jQuery(time_div).addClass("child")
+          jQuery(time_div).addClass("red")
+
+          var time_p = document.createElement( "p" );
+          jQuery(time_p).html(time_show)
+
+          var email_label = document.createElement( "label" );
+          jQuery(email_label).html("")
+
+          if(time[APPOINTMENT] !== null){
+            jQuery(email_label).html(time[APPOINTMENT][EMAIL])
+            jQuery(time_div).attr("inner_id",time[APPOINTMENT][ID])
+            if(time[ENABLED]){
+              jQuery(time_div).addClass("editable_field")
+              jQuery(time_div).on("click", switchToInput);
+              jQuery(time_div).removeClass("red")
+              jQuery(time_div).addClass("grey")
+            }
+          }
+          else{
+            if(time[ENABLED]){
+              jQuery(time_div).addClass("editable_field")
+              jQuery(time_div).on("click", switchToInput);
+              jQuery(time_div).removeClass("red")
+              jQuery(time_div).addClass("green")
+            }
+          }
+          jQuery(time_p).append(email_label)
+          jQuery(time_div).append(time_p)
+
+          jQuery("#two").append(time_div)
+        })
+      }
+    </script>
+
+  </head>
+  <body>
+  
+    {% include "include_navbar.html" %}
+    <br/><br/>
+
+    <div class="home">
+      <div id="master">
+        <div id="zero">
+          <div id="info">
+            <p>
+              In order to schedule an appointment with Death, you must choose a laboral day in the calendar, from today to forward, and then click a green slot to create one giving a valid email.
+              <br>If you click an existing future appointment, grey slot, you can edit it if you give a new email, or erase the existing email, which will free that slot for another appointment.
+              <br>Red slots can`t be edited by any way, either they are not in a laboral day or they are in the past.
+            </p>
+          </div>
+        </div>
+        <div id="one">
+          <div id="datepicker" type="text"></div>
+        </div>
+        <div id="two">
+        </div>
+      </div>
+    </div>
+
+    <br/><br/>
+    {% include "include_footer.html" %}
+
+
+  </body>
+</html>
